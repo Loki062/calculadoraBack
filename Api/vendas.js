@@ -12,12 +12,12 @@ app.use(cors({
 
 app.use(express.json());
 
-// Conectar ao banco de dados SQLite (caminho relativo)
-const db = new sqlite3.Database('./vendas.db', (err) => {
+// Conectar ao banco de dados SQLite (em memória)
+const db = new sqlite3.Database(':memory:', (err) => {
   if (err) {
     console.error('Erro ao conectar ao banco:', err.message);
   } else {
-    console.log('Conectado ao banco SQLite.');
+    console.log('Conectado ao banco SQLite em memória.');
   }
 });
 
