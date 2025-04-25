@@ -1,5 +1,5 @@
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const cors = require('cors');
 const app = express();
 
@@ -12,29 +12,22 @@ app.use(cors({
 
 app.use(express.json());
 
-// Conectar ao banco de dados SQLite (em memória)
-const db = new sqlite3.Database(':memory:', (err) => {
+// Conectar ao banco de dados PostgreSQL (Supabase)
+const pool = new Pool({
+  connectionString: 'postgres://postgres:D11e61c540@@bafsxgmddjefhmmccral.supabase.co:5432/postgres',
+  ssl: { rejectUnauthorized: false } // Necessário para Supabase
+});
+
+pool.connect((err) => {
   if (err) {
     console.error('Erro ao conectar ao banco:', err.message);
   } else {
-    console.log('Conectado ao banco SQLite em memória.');
+    console.log('Conectado ao banco PostgreSQL (Supabase).');
   }
 });
 
-// Criar tabela de vendas
-db.run(`
-  CREATE TABLE IF NOT EXISTS vendas (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    franquia TEXT NOT NULL,
-    valor_projeto REAL NOT NULL,
-    margem_valor REAL NOT NULL,
-    margem_percentual REAL NOT NULL,
-    data TEXT NOT NULL
-  )
-`);
-
 // Endpoint para salvar uma venda
-app.post('/vendas', (req, res) => {
+app.post('/vendas', async (req, res) => {
   const { franquia, valor_projeto, margem_valor, margem_percentual } = req.body;
   const data = new Date().toISOString();
 
@@ -42,33 +35,35 @@ app.post('/vendas', (req, res) => {
     return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
   }
 
-  const stmt = db.prepare(`
-    INSERT INTO vendas (franquia, valor_projeto, margem_valor, margem_percentual, data)
-    VALUES (?, ?, ?, ?, ?)
-  `);
-  stmt.run(franquia, valor_projeto, margem_valor, margem_percentual, data, function (err) {
-    if (err) {
-      return res.status(500).json({ error: 'Erro ao salvar venda.' });
-    }
-    res.status(201).json({ id: this.lastID, message: 'Venda salva com sucesso!' });
-  });
-  stmt.finalize();
+  try {
+    const result = await pool.query(
+      `INSERT INTO vendas (franquia, valor_projeto, margem_valor, margem_percentual, data)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [franquia, valor_projeto, margem_valor, margem_percentual, data]
+    );
+    res.status(201).json({ id: result.rows[0].id, message: 'Venda salva com sucesso!' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao salvar venda.' });
+  }
 });
 
 // Endpoint para consultar histórico por franquia
-app.get('/historico', (req, res) => {
-  db.all(`
-    SELECT franquia, 
-           SUM(margem_valor) as total_margem,
-           COUNT(*) as total_vendas
-    FROM vendas
-    GROUP BY franquia
-  `, (err, rows) => {
-    if (err) {
-      return res.status(500).json({ error: 'Erro ao consultar histórico.' });
-    }
-    res.json(rows);
-  });
+app.get('/historico', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT franquia, 
+             SUM(margem_valor) as total_margem,
+             COUNT(*) as total_vendas
+      FROM vendas
+      GROUP BY franquia
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao consultar histórico.' });
+  }
 });
 
 // Exportar para Vercel
