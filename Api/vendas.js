@@ -1,7 +1,9 @@
+const { PrismaClient } = require('@prisma/client');
 const express = require('express');
-const { Pool } = require('pg');
 const cors = require('cors');
+
 const app = express();
+const prisma = new PrismaClient();
 
 // Configurar CORS para permitir requisições do frontend na Netlify
 app.use(cors({
@@ -11,20 +13,6 @@ app.use(cors({
 }));
 
 app.use(express.json());
-
-// Conectar ao banco de dados PostgreSQL (Neon)
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false } // Necessário para Neon
-});
-
-pool.connect((err) => {
-  if (err) {
-    console.error('Erro ao conectar ao banco:', err.message);
-  } else {
-    console.log('Conectado ao banco PostgreSQL (Neon).');
-  }
-});
 
 // Endpoint para salvar uma venda
 app.post('/vendas', async (req, res) => {
@@ -36,15 +24,19 @@ app.post('/vendas', async (req, res) => {
   }
 
   try {
-    const result = await pool.query(
-      `INSERT INTO vendas (franquia, valor_projeto, margem_valor, margem_percentual, data)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id`,
-      [franquia, valor_projeto, margem_valor, margem_percentual, data]
-    );
-    res.status(201).json({ id: result.rows[0].id, message: 'Venda salva com sucesso!' });
-  } catch (err) {
-    console.error(err);
+    const newVenda = await prisma.venda.create({
+      data: {
+        franquia,
+        valor_projeto,
+        margem_valor,
+        margem_percentual,
+        data,
+      },
+    });
+
+    res.status(201).json({ id: newVenda.id, message: 'Venda salva com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao salvar venda:', error);
     res.status(500).json({ error: 'Erro ao salvar venda.' });
   }
 });
@@ -52,16 +44,25 @@ app.post('/vendas', async (req, res) => {
 // Endpoint para consultar histórico por franquia
 app.get('/historico', async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT franquia, 
-             SUM(margem_valor) as total_margem,
-             COUNT(*) as total_vendas
-      FROM vendas
-      GROUP BY franquia
-    `);
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
+    const historico = await prisma.venda.groupBy({
+      by: ['franquia'],
+      _sum: {
+        margem_valor: true,
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    const result = historico.map(item => ({
+      franquia: item.franquia,
+      total_margem: item._sum.margem_valor,
+      total_vendas: item._count._all,
+    }));
+
+    res.json(result);
+  } catch (error) {
+    console.error('Erro ao consultar histórico:', error);
     res.status(500).json({ error: 'Erro ao consultar histórico.' });
   }
 });

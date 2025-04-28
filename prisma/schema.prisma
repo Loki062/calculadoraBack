@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model vendas {
+  id                Int    @id @default(autoincrement())
+  franquia          String
+  valor_projeto     Float
+  margem_valor      Float
+  margem_percentual Float
+  data              String
+}
