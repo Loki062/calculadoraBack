@@ -10,10 +10,9 @@ try {
   console.log('PrismaClient inicializado com sucesso.');
 } catch (error) {
   console.error('Erro ao inicializar o PrismaClient:', error);
-  process.exit(1); // Encerra o processo para evitar comportamento indefinido
+  process.exit(1);
 }
 
-// Configurar CORS para permitir requisições do frontend na Netlify
 app.use(cors({
   origin: ['https://margemcontribuicao.netlify.app', 'http://localhost:8080'],
   methods: ['GET', 'POST', 'OPTIONS'],
@@ -22,13 +21,11 @@ app.use(cors({
 
 app.use(express.json());
 
-// Middleware para debug
 app.use((req, res, next) => {
   console.log(`Recebida requisição: ${req.method} ${req.url}`);
   next();
 });
 
-// Endpoint para salvar uma venda
 app.post('/vendas', async (req, res) => {
   console.log('Processando POST /vendas com body:', req.body);
   const { franquia, valor_projeto, margem_valor, margem_percentual } = req.body;
@@ -58,7 +55,6 @@ app.post('/vendas', async (req, res) => {
   }
 });
 
-// Endpoint para consultar histórico por franquia
 app.get('/historico', async (req, res) => {
   console.log('Processando GET /historico');
   try {
@@ -86,5 +82,4 @@ app.get('/historico', async (req, res) => {
   }
 });
 
-// Exportar para Vercel
 module.exports = app;
