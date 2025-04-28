@@ -26,6 +26,11 @@ app.use((req, res, next) => {
   next();
 });
 
+// Endpoint para a raiz
+app.get('/', (req, res) => {
+  res.send('Welcome to the Calculadora API!');
+});
+
 app.post('/vendas', async (req, res) => {
   console.log('Processando POST /vendas com body:', req.body);
   const { franquia, valor_projeto, margem_valor, margem_percentual } = req.body;

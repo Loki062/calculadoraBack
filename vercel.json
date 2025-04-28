@@ -1,9 +1,19 @@
 {
-    "version": 2,
-    "rewrites": [
-      {
-        "source": "/api/(.*)",
-        "destination": "/api/vendas"
-      }
-    ]
-  }
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/vendas.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/vendas.js"
+    },
+    {
+      "src": "/",
+      "dest": "/api/vendas.js"
+    }
+  ]
+}
