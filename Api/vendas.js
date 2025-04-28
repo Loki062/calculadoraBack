@@ -12,17 +12,17 @@ app.use(cors({
 
 app.use(express.json());
 
-// Conectar ao banco de dados PostgreSQL (Supabase)
+// Conectar ao banco de dados PostgreSQL (Neon)
 const pool = new Pool({
-  connectionString: 'postgres://postgres:D11e61c540@@bafsxgmddjefhmmccral.supabase.co:5432/postgres',
-  ssl: { rejectUnauthorized: false } // Necessário para Supabase
+  connectionString: 'postgresql://MargemC_owner:npg_oPTvcOw9dM8U@ep-crimson-frog-acmu8ysw-pooler.sa-east-1.aws.neon.tech/MargemC?sslmode=require',
+  ssl: { rejectUnauthorized: false } // Necessário para Neon
 });
 
 pool.connect((err) => {
   if (err) {
     console.error('Erro ao conectar ao banco:', err.message);
   } else {
-    console.log('Conectado ao banco PostgreSQL (Supabase).');
+    console.log('Conectado ao banco PostgreSQL (Neon).');
   }
 });
 
