@@ -14,7 +14,7 @@ app.use(express.json());
 
 // Conectar ao banco de dados PostgreSQL (Neon)
 const pool = new Pool({
-  connectionString: 'postgresql://MargemC_owner:npg_oPTvcOw9dM8U@ep-crimson-frog-acmu8ysw-pooler.sa-east-1.aws.neon.tech/MargemC?sslmode=require',
+  connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false } // Necessário para Neon
 });
 
